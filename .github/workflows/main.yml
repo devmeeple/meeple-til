@@ -1,27 +1,33 @@
-name: TIL Summary
+name: Update Links
 
 on:
-  schedule:
-    - cron: '0 0 * * *'
+  push:
+    paths:
+    - '**/*.md'  # 저장소 내 모든 md 파일이 변경될 때마다 실행
 
 jobs:
-  update-readme:
+  update-links:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
 
-    - name: Update README
+    - name: Update Links in book main markdown files
       run: |
-        echo "# Today I Learned" > README.md
-        echo "" >> README.md
-        echo "$(ls -1 *.md | wc -l) TILs so far." >> README.md
-        echo "" >> README.md
-        echo "Last updated on $(date)." >> README.md
+        echo "# 목차 " > README.md
+        for book in $(find . -maxdepth 1 -type d -not -name '.' -not -name '.github'); do
+          bookname=$(basename $book)
+          echo "- [$bookname](./$bookname/$bookname.md)" >> README.md
+          echo "# 목차" > "$book/$bookname.md"
+          for chapter in $(find $book -maxdepth 1 -type d -not -name $book); do
+            chaptername=$(basename $chapter)
+            echo "- [$chaptername](./$chaptername/$chaptername.md)" >> "$book/$bookname.md"
+          done
+        done
 
     - name: Commit and push if changed
       run: |
         git diff
         git config --global user.email "devmeeple@github.com"
         git config --global user.name "GitHub Actions"
-        git commit -am "Update TIL summary" || exit 0
+        git commit -am "Update chapter links" || exit 0
         git push
